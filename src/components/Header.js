@@ -11,7 +11,7 @@ const Header = props => {
 
 	return (
 		<nav className="navbar navbar-dark bg-dark">
-			<div className="container">
+			<div className="container-fluid">
 				<a className="navbar-brand" href="#">Social Newtwork</a>
 				{account ? (
 					<div className="ml-auto text-white-50">

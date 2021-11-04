@@ -44,5 +44,8 @@
   "devDependencies": {
     "prettier": "^2.4.1",
     "prettier-plugin-solidity": "*"
+  },
+  "engines": {
+    "node": "14.16.0"
   }
 }

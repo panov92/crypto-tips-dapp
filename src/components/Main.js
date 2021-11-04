@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import Identicon from 'identicon.js';
+import ee from "../utils/events";
 
 const Main = props => {
-	const { posts, createPost, tipPost } = props;
+	const { posts, createPost, tipPost, account, socialNetwork } = props;
 
 	const [content, setContent] = useState('');
 
@@ -32,10 +33,20 @@ const Main = props => {
 				<main role="main" className="col-12 col-sm-10 col-lg-6 m-auto">
 					<div className="content">
 						<form className="mb-5" onSubmit={handleSubmit}>
-							<input value={content} onChange={handleInput} className="form-control mb-2" type="text" placeholder="What's new with you?" aria-label="What's new with you?" />
+							<input value={content} onChange={handleInput} required className="form-control mb-2" type="text" placeholder="What's new with you?" aria-label="What's new with you?" />
 							<div className="d-grid gap-2">
-							<button className="btn btn-block btn-primary" type="submit">Share</button>
+								<button className="btn btn-block btn-primary" type="submit" disabled={!account || !socialNetwork}>Share</button>
 							</div>
+							{!account ? (
+								<div className="alert alert-warning mt-3" role="alert">
+									You must login with MetaMask
+								</div>
+							): null}
+							{!socialNetwork && account ? (
+								<div className="alert alert-warning mt-3" role="alert">
+									Wrong chain ID
+								</div>
+							): null}
 						</form>
 						{posts.map((post, key) => {
 							return (

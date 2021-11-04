@@ -1,5 +1,6 @@
 import React from 'react';
 import Identicon from 'identicon.js';
+import ee from '../utils/events';
 
 const Header = props => {
 	const { account } = props;
@@ -7,6 +8,12 @@ const Header = props => {
 	const getAvatar = account => {
 		const imgString = new Identicon(account, 30).toString();
 		return `data:image/png;base64,${imgString}`;
+	}
+
+	const handleClick = async () => {
+		if (window.ethereum) {
+			await window.ethereum.enable();
+		}
 	}
 
 	return (
@@ -18,7 +25,9 @@ const Header = props => {
 						<img className="rounded-circle me-2" src={getAvatar(account)} />
 						<small>{account}</small>
 					</div>
-				) : null}
+				) : (
+					<button onClick={handleClick} type="button" className="btn btn-sm btn-info text-white">Connect Wallet</button>
+				)}
 			</div>
 		</nav>
 	)

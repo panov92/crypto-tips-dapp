@@ -17,7 +17,8 @@ class App extends Component {
       socialNetwork: null,
       postsCount: 0,
       posts: [],
-      loading: false
+      loading: false,
+      networkId: null,
     }
 
     this.createPost = this.createPost.bind(this);
@@ -31,16 +32,18 @@ class App extends Component {
   }
 
   checkEvents() {
-    window.ethereum.on('accountsChanged', accounts => {
-      if (accounts.length) {
-        this.setState({ account: accounts[0] })
-      } else {
-        this.setState({ account: null })
-      }
-    });
-    window.ethereum.on('chainChanged', async () => {
-      await this.loadBlockchainData();
-    });
+    if (window.ethereum) {
+      window.ethereum.on('accountsChanged', accounts => {
+        if (accounts.length) {
+          this.setState({ account: accounts[0] })
+        } else {
+          this.setState({ account: null })
+        }
+      });
+      window.ethereum.on('chainChanged', async () => {
+        await this.loadBlockchainData();
+      });
+    }
   }
 
   async loadWeb3() {
@@ -56,22 +59,26 @@ class App extends Component {
   }
 
   async loadBlockchainData() {
-    const web3 = window.web3;
-
-    // Load account
-    const accounts = await web3.eth.getAccounts();
-    this.setState({ account: accounts[0] });
-
-    // Network ID
-    const networkId = await web3.eth.net.getId();
-    const networkData = SocialNetwork.networks[networkId];
-
-    if (networkData) {
+    if (window.web3) {
       const web3 = window.web3;
-      const socialNetwork = new web3.eth.Contract(SocialNetwork.abi, networkData.address);
-      this.loadPosts(socialNetwork);
-    } else {
-      this.setState({ socialNetwork: null, posts: [] });
+
+      // Load account
+      const accounts = await web3.eth.getAccounts();
+      this.setState({ account: accounts[0] });
+
+      // Network ID
+      const networkId = await web3.eth.net.getId();
+      this.setState({ networkId });
+
+      const networkData = SocialNetwork.networks[networkId];
+
+      if (networkData) {
+        const web3 = window.web3;
+        const socialNetwork = new web3.eth.Contract(SocialNetwork.abi, networkData.address);
+        this.loadPosts(socialNetwork);
+      } else {
+        this.setState({ socialNetwork: null, posts: [] });
+      }
     }
   }
 
@@ -96,15 +103,34 @@ class App extends Component {
   createPost(content) {
     const { socialNetwork, account, posts } = this.state;
     this.setState({ loading: true });
+    const toastID = toast.loading("Pending...");
     socialNetwork.methods.createPost(content).send({ from: account })
       .once('receipt', receipt => {
         const newPost = receipt.events.PostCreated.returnValues;
-        toast.success('Your post has been published successfully');
+
+        toast.update(toastID, {
+          render: 'Your post has been published successfully',
+          type: "success",
+          isLoading: false,
+          autoClose: 5000,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true, 
+        });
+
         this.setState({ loading: false, posts: this.sortPostsByTipsAmount([...posts, newPost]) })
       })
       .on('error', (error, receipt) => { // If the transaction was rejected by the network with a receipt, the second parameter will be the receipt.
         this.setState({ loading: false })
-        toast.error(error.message);
+        toast.update(toastID, {
+          render: error.message,
+          type: "error",
+          isLoading: false,
+          autoClose: 5000,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true, 
+        });
       });
   }
 
@@ -114,6 +140,7 @@ class App extends Component {
 
   tipPost(id, tipAmount) {
     const { socialNetwork, account, posts } = this.state;
+    const toastID = toast.loading("Pending...")
     this.setState({ loading: true });
     socialNetwork.methods.tipPost(id).send({ from: account, value: tipAmount })
       .once('receipt', receipt => {
@@ -124,30 +151,38 @@ class App extends Component {
         newPosts[index] = tippedPost;
         newPosts = this.sortPostsByTipsAmount(newPosts);
 
-        toast.success('Your tip has been sent successfully');
+        toast.update(toastID, {
+          render: 'Your tip has been sent successfully',
+          type: "success",
+          isLoading: false,
+          autoClose: 5000,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true, 
+        });
 
         this.setState({ loading: false, posts: newPosts });
       })
       .on('error', (error, receipt) => { // If the transaction was rejected by the network with a receipt, the second parameter will be the receipt.
-        this.setState({ loading: false })
-        toast.error(error.message);
+        this.setState({ loading: false });
+        toast.update(toastID, {
+          render: error.message,
+          type: "error",
+          isLoading: false,
+          autoClose: 5000,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true, 
+        });
       });
   }
 
   render() {
-    const { account, posts, loading, socialNetwork } = this.state;
+    const { account, posts, loading, networkId } = this.state;
     return (
       <div>
         <Header account={account} />
-        {loading ? (
-          <div className="d-flex justify-content-center mt-5">
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </div>
-          </div>
-        ) : (
-          <Main socialNetwork={socialNetwork}  account={account} tipPost={this.tipPost} createPost={this.createPost} posts={posts}  />
-        )}
+        <Main networkId={networkId} account={account} tipPost={this.tipPost} createPost={this.createPost} posts={posts}  />
         <ToastContainer
           position="top-center"
           autoClose={5000}

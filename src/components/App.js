@@ -122,6 +122,7 @@ class App extends Component {
       })
       .on('error', (error, receipt) => { // If the transaction was rejected by the network with a receipt, the second parameter will be the receipt.
         this.setState({ loading: false })
+
         toast.update(toastID, {
           render: error.message,
           type: "error",
